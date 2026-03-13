@@ -12,3 +12,4 @@ resources:
   - eventlistener.yaml
   - eventlistener-route.yaml
   - gh_github-token.yaml
+  - argocd-token.yaml

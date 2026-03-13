@@ -1,0 +1,26 @@
+---
+# To generate this SealedSecret:
+# 1. Create an ArgoCD API token:
+#    argocd account generate-token --account admin
+#    (or via UI: Settings → Accounts → Generate Token)
+# 2. Seal it with kubeseal:
+#    kubectl create secret generic argocd-token \
+#      --namespace example-paas-tekton \
+#      --from-literal=token=<your-argocd-token> \
+#      --dry-run=client -o yaml | \
+#    kubeseal --controller-namespace sealed-secrets \
+#      --format yaml > argocd/build/argocd-token.yaml
+# 3. Commit the sealed file (the encrypted value is safe to commit)
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: argocd-token
+  namespace: example-paas-tekton
+spec:
+  encryptedData:
+    token: REPLACE_WITH_SEALED_TOKEN
+  template:
+    metadata:
+      name: argocd-token
+      namespace: example-paas-tekton
+    type: Opaque

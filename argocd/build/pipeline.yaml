@@ -103,6 +103,11 @@ spec:
                   secretKeyRef:
                     name: github-token
                     key: token
+              - name: ARGOCD_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: argocd-token
+                    key: token
               - name: IMAGE_DIGEST
                 value: $(params.IMAGE_DIGEST)
               - name: IMAGE
@@ -161,3 +166,11 @@ spec:
               git push origin "main"
 
               echo "Successfully pushed digest update: ${DIGEST_REF}"
+
+              # Trigger immediate ArgoCD sync of the deploy application
+              echo "Triggering ArgoCD sync for paas-demo-deploy..."
+              curl -sk -X POST \
+                https://argo-service-server-example-paas-argocd.apps.y48v9mub.westeurope.aroapp.io/api/v1/applications/paas-demo-deploy/sync \
+                -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d '{}' && echo "ArgoCD sync triggered successfully" || echo "ArgoCD sync trigger failed (non-fatal)"
