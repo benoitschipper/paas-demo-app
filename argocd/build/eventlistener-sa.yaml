@@ -7,26 +7,36 @@ metadata:
   labels:
     app: paas-demo-app
 ---
+# Minimal Role: only the permissions the EventListener actually needs
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: Role
 metadata:
-  name: paas-demo-el-triggers
+  name: paas-demo-el-role
   namespace: example-paas-tekton
   labels:
     app: paas-demo-app
-subjects:
-  - kind: ServiceAccount
-    name: paas-demo-el
-    namespace: example-paas-tekton
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: tekton-triggers-eventlistener-roles
+rules:
+  # Allow EventListener to create PipelineRuns
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["create", "get", "list", "watch"]
+  # Allow EventListener to read TriggerBindings, TriggerTemplates, EventListeners
+  - apiGroups: ["triggers.tekton.dev"]
+    resources:
+      - triggerbindings
+      - triggertemplates
+      - eventlisteners
+      - interceptors
+    verbs: ["get", "list", "watch"]
+  # Allow EventListener to create/update ConfigMaps (for leader election)
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: paas-demo-el-pipelinerun-create
+  name: paas-demo-el-rolebinding
   namespace: example-paas-tekton
   labels:
     app: paas-demo-app
@@ -36,5 +46,5 @@ subjects:
     namespace: example-paas-tekton
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: tekton-triggers-aggregate-to-listener
+  kind: Role
+  name: paas-demo-el-role
