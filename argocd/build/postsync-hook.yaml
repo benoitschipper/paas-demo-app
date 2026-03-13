@@ -47,6 +47,9 @@ spec:
                   name: paas-demo-app-pipeline
                 taskRunTemplate:
                   serviceAccountName: paas-demo-pipeline
+                  podTemplate:
+                    securityContext:
+                      fsGroup: 65532
                 params:
                   - name: GIT_URL
                     value: https://github.com/benoitschipper/paas-demo-app.git
