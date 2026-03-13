@@ -158,6 +158,6 @@ spec:
               }
 
               git commit -m "chore: update image digest to sha256:${SHORT_DIGEST} [skip ci]"
-              git push origin "${GIT_REVISION}"
+              git push origin "main"
 
               echo "Successfully pushed digest update: ${DIGEST_REF}"
