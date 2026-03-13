@@ -7,8 +7,8 @@ resources:
   - serviceaccount.yaml
   - rolebindings.yaml
   - pipeline.yaml
-  - hook-serviceaccount.yaml
-  - hook-role.yaml
-  - hook-rolebinding.yaml
-  - pipelinerun-hook.yaml
+  - triggerbinding.yaml
+  - triggertemplate.yaml
+  - eventlistener.yaml
+  - eventlistener-route.yaml
   - gh_github-token.yaml

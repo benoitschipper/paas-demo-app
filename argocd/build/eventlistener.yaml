@@ -1,0 +1,13 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: paas-demo-app-listener
+  namespace: example-paas-tekton
+spec:
+  serviceAccountName: paas-demo-pipeline
+  triggers:
+    - name: github-push
+      bindings:
+        - ref: paas-demo-app-binding
+      template:
+        ref: paas-demo-app-template
