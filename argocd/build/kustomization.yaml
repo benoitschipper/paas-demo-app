@@ -11,4 +11,4 @@ resources:
   - hook-role.yaml
   - hook-rolebinding.yaml
   - pipelinerun-hook.yaml
-  - rollout-hook.yaml
+  - gh_github-token.yaml

@@ -13,7 +13,7 @@ spec:
       default: main
     - name: IMAGE
       type: string
-      description: Full image reference to build and push
+      description: Full image reference to build and push (without digest)
   workspaces:
     - name: source
   tasks:
@@ -61,3 +61,106 @@ spec:
           value: .
         - name: TLS_VERIFY
           value: "false"
+    - name: git-commit-push
+      # Inline taskSpec: after buildah pushes the image, retrieve the digest
+      # from the buildah result and commit the updated argocd/deploy/deployment.yaml
+      # back to GitHub so ArgoCD paas-demo-deploy detects a real manifest change.
+      # The github-token Secret must exist in example-paas-tekton before running.
+      runAfter:
+        - buildah
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE_DIGEST
+          value: $(tasks.buildah.results.IMAGE_DIGEST)
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: GIT_URL
+          value: $(params.GIT_URL)
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+      taskSpec:
+        params:
+          - name: IMAGE_DIGEST
+            type: string
+            description: The sha256 digest of the newly built image (from buildah result)
+          - name: IMAGE
+            type: string
+            description: Base image reference without tag or digest
+          - name: GIT_URL
+            type: string
+            description: Git repository HTTPS URL
+          - name: GIT_REVISION
+            type: string
+            description: Git branch to push to
+        workspaces:
+          - name: source
+        steps:
+          - name: update-and-push
+            image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: token
+              - name: IMAGE_DIGEST
+                value: $(params.IMAGE_DIGEST)
+              - name: IMAGE
+                value: $(params.IMAGE)
+              - name: GIT_URL
+                value: $(params.GIT_URL)
+              - name: GIT_REVISION
+                value: $(params.GIT_REVISION)
+            workingDir: $(workspaces.source.path)
+            script: |
+              #!/bin/sh
+              set -eu
+
+              # Install git if not present (cli image has oc but may lack git)
+              if ! command -v git >/dev/null 2>&1; then
+                dnf install -y git --quiet
+              fi
+
+              # Configure git identity for the commit
+              git config user.email "tekton-pipeline@paas-demo"
+              git config user.name "Tekton Pipeline"
+
+              # Set the authenticated remote URL using the GitHub token
+              REPO_PATH=$(echo "${GIT_URL}" | sed 's|https://||')
+              git remote set-url origin "https://${GITHUB_TOKEN}@${REPO_PATH}"
+
+              # Sync with remote to avoid non-fast-forward push failures
+              git fetch origin "${GIT_REVISION}"
+              git reset --hard "origin/${GIT_REVISION}"
+
+              # Build the full digest-pinned image reference
+              # IMAGE may end with :latest or :tag — strip any tag/digest first
+              BASE_IMAGE=$(echo "${IMAGE}" | sed 's|:[^@]*$||' | sed 's|@sha256:.*$||')
+              DIGEST_REF="${BASE_IMAGE}@${IMAGE_DIGEST}"
+
+              echo "Updating argocd/deploy/deployment.yaml image to: ${DIGEST_REF}"
+
+              # Replace the image: line in argocd/deploy/deployment.yaml
+              sed -i "s|image: .*paas-demo-app.*|image: ${DIGEST_REF}|g" \
+                argocd/deploy/deployment.yaml
+
+              # Verify the change was applied
+              grep "image:" argocd/deploy/deployment.yaml
+
+              # Commit only the deployment manifest
+              git add argocd/deploy/deployment.yaml
+
+              # Extract short digest for commit message (first 12 chars after sha256:)
+              SHORT_DIGEST=$(echo "${IMAGE_DIGEST}" | sed 's|sha256:||' | cut -c1-12)
+
+              git diff --cached --quiet && {
+                echo "No changes to commit — digest unchanged, skipping push"
+                exit 0
+              }
+
+              git commit -m "chore: update image digest to sha256:${SHORT_DIGEST} [skip ci]"
+              git push origin "${GIT_REVISION}"
+
+              echo "Successfully pushed digest update: ${DIGEST_REF}"
