@@ -43,7 +43,8 @@ spec:
               spec:
                 pipelineRef:
                   name: paas-demo-app-pipeline
-                serviceAccountName: paas-demo-pipeline
+                taskRunTemplate:
+                  serviceAccountName: paas-demo-pipeline
                 params:
                   - name: GIT_URL
                     value: https://github.com/benoitschipper/paas-demo-app.git
