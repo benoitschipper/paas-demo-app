@@ -1,15 +1,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trigger-paas-demo-pipeline
+  generateName: trigger-paas-demo-pipeline-
   namespace: example-paas-tekton
   labels:
     app: paas-demo-app
   annotations:
     # Run this Job after the ArgoCD sync of paas-demo-build completes successfully
     argocd.argoproj.io/hook: PostSync
-    # Delete the Job automatically once it succeeds
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    # Delete the Job automatically once it succeeds.
+    # BeforeHookCreation ensures any leftover Job from a previous sync is removed
+    # before a new one is created (required when using generateName).
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 300
   backoffLimit: 1
