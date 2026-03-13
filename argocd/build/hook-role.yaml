@@ -7,6 +7,3 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "list", "patch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments/rollout"]
-    verbs: ["create", "update"]
