@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - argocd-controller-rbac.yaml
+  - image-puller-rolebinding.yaml
   - serviceaccount.yaml
   - rolebindings.yaml
   - pipeline.yaml
