@@ -1,0 +1,23 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: paas-demo-app-el
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+spec:
+  serviceAccountName: paas-demo-el
+  triggers:
+    - name: github-push
+      interceptors:
+        - ref:
+            name: github
+            kind: ClusterInterceptor
+          params:
+            - name: eventTypes
+              value:
+                - push
+      bindings:
+        - ref: paas-demo-app-triggerbinding
+      template:
+        ref: paas-demo-app-triggertemplate

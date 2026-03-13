@@ -1,0 +1,47 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: paas-demo-app-triggertemplate
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+spec:
+  params:
+    - name: GIT_URL
+      description: Git repository URL
+    - name: GIT_REVISION
+      description: Git commit SHA
+      default: main
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: paas-demo-app-pipeline-run-
+        namespace: example-paas-tekton
+        labels:
+          app: paas-demo-app
+          tekton.dev/pipeline: paas-demo-app-pipeline
+      spec:
+        pipelineRef:
+          name: paas-demo-app-pipeline
+        serviceAccountName: paas-demo-pipeline
+        params:
+          - name: GIT_URL
+            value: $(tt.params.GIT_URL)
+          - name: GIT_REVISION
+            value: $(tt.params.GIT_REVISION)
+          - name: IMAGE
+            value: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:$(tt.params.GIT_REVISION)
+          - name: DEPLOY_MANIFEST_PATH
+            value: argocd/deploy/deployment.yaml
+          - name: GIT_USER_NAME
+            value: "Tekton Pipeline"
+          - name: GIT_USER_EMAIL
+            value: "tekton@paas-demo-app"
+        workspaces:
+          - name: source
+            persistentVolumeClaim:
+              claimName: paas-demo-pipeline-workspace
+          - name: git-credentials
+            secret:
+              secretName: git-push-secret

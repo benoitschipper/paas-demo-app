@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: paas-demo-app-pipeline
+  namespace: example-paas-tekton
   labels:
     app: paas-demo-app
 spec:
@@ -33,7 +34,7 @@ spec:
     - name: source
       description: Shared workspace for source code and git operations
     - name: git-credentials
-      description: Secret workspace containing git credentials (username/password)
+      description: Secret workspace containing git credentials (username/password or SSH key)
 
   results:
     - name: IMAGE_DIGEST
@@ -102,7 +103,6 @@ spec:
           value: "--label git-commit=$(params.GIT_REVISION)"
 
     # Task 3: Update the deployment manifest with the new image digest and push to git
-    # ArgoCD then detects the change and rolls out the new image in example-paas-dev
     - name: git-update-manifest
       runAfter:
         - buildah

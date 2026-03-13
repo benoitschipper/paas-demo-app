@@ -1,0 +1,13 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: paas-demo-app-triggerbinding
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+spec:
+  params:
+    - name: GIT_URL
+      value: $(body.repository.clone_url)
+    - name: GIT_REVISION
+      value: $(body.head_commit.id)

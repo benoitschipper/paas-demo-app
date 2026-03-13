@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: paas-demo-app
+  namespace: example-paas-dev
+  labels:
+    app: paas-demo-app
+    app.kubernetes.io/name: paas-demo-app
+    app.kubernetes.io/component: frontend
+spec:
+  to:
+    kind: Service
+    name: paas-demo-app
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
