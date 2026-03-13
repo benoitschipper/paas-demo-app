@@ -94,8 +94,6 @@ spec:
           - name: GIT_REVISION
             type: string
             description: Git branch to push to
-        workspaces:
-          - name: source
         steps:
           - name: update-and-push
             image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
@@ -113,7 +111,6 @@ spec:
                 value: $(params.GIT_URL)
               - name: GIT_REVISION
                 value: $(params.GIT_REVISION)
-            workingDir: $(workspaces.source.path)
             script: |
               #!/bin/sh
               set -eu
@@ -123,17 +120,16 @@ spec:
                 dnf install -y git --quiet
               fi
 
+              # Clone the repo fresh using the authenticated URL into /workspace/gitops
+              REPO_PATH=$(echo "${GIT_URL}" | sed 's|https://||')
+              AUTH_URL="https://${GITHUB_TOKEN}@${REPO_PATH}"
+
+              git clone --depth=1 --branch "${GIT_REVISION}" "${AUTH_URL}" /workspace/gitops
+              cd /workspace/gitops
+
               # Configure git identity for the commit
               git config user.email "tekton-pipeline@paas-demo"
               git config user.name "Tekton Pipeline"
-
-              # Set the authenticated remote URL using the GitHub token
-              REPO_PATH=$(echo "${GIT_URL}" | sed 's|https://||')
-              git remote set-url origin "https://${GITHUB_TOKEN}@${REPO_PATH}"
-
-              # Sync with remote to avoid non-fast-forward push failures
-              git fetch origin "${GIT_REVISION}"
-              git reset --hard "origin/${GIT_REVISION}"
 
               # Build the full digest-pinned image reference
               # IMAGE may end with :latest or :tag — strip any tag/digest first
