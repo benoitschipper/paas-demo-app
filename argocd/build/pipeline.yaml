@@ -124,7 +124,7 @@ spec:
               REPO_PATH=$(echo "${GIT_URL}" | sed 's|https://||')
               AUTH_URL="https://${GITHUB_TOKEN}@${REPO_PATH}"
 
-              git clone --depth=1 --branch "${GIT_REVISION}" "${AUTH_URL}" /workspace/gitops
+              git clone --depth=1 --branch "main" "${AUTH_URL}" /workspace/gitops
               cd /workspace/gitops
 
               # Configure git identity for the commit
