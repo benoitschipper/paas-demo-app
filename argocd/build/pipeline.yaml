@@ -1,0 +1,241 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: paas-demo-app-pipeline
+  labels:
+    app: paas-demo-app
+spec:
+  params:
+    - name: GIT_URL
+      type: string
+      description: Git repository URL
+      default: https://github.com/benoitschipper/paas-demo-app.git
+    - name: GIT_REVISION
+      type: string
+      description: Git revision (branch, tag, or commit SHA)
+      default: main
+    - name: IMAGE
+      type: string
+      description: Full image reference including registry and tag
+      default: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
+    - name: DEPLOY_MANIFEST_PATH
+      type: string
+      description: Path within the repo to the deployment manifest to update
+      default: argocd/deploy/deployment.yaml
+    - name: GIT_USER_NAME
+      type: string
+      description: Git commit author name
+      default: "Tekton Pipeline"
+    - name: GIT_USER_EMAIL
+      type: string
+      description: Git commit author email
+      default: "tekton@paas-demo-app"
+
+  workspaces:
+    - name: source
+      description: Shared workspace for source code and git operations
+    - name: git-credentials
+      description: Secret workspace containing git credentials (username/password)
+
+  results:
+    - name: IMAGE_DIGEST
+      description: Digest of the built image
+      value: $(tasks.buildah.results.IMAGE_DIGEST)
+
+  tasks:
+    # Task 1: Clone the Git repository
+    - name: git-clone
+      taskRef:
+        resolver: hub
+        params:
+          - name: catalog
+            value: tekton-catalog-tasks
+          - name: type
+            value: artifact
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: version
+            value: "0.9"
+      workspaces:
+        - name: output
+          workspace: source
+        - name: basic-auth
+          workspace: git-credentials
+      params:
+        - name: url
+          value: $(params.GIT_URL)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: deleteExisting
+          value: "true"
+
+    # Task 2: Build and push the container image using Buildah
+    - name: buildah
+      taskRef:
+        resolver: hub
+        params:
+          - name: catalog
+            value: tekton-catalog-tasks
+          - name: type
+            value: artifact
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: version
+            value: "0.7"
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "true"
+        - name: BUILD_EXTRA_ARGS
+          value: "--label git-commit=$(params.GIT_REVISION)"
+
+    # Task 3: Update the deployment manifest with the new image digest and push to git
+    # ArgoCD then detects the change and rolls out the new image in example-paas-dev
+    - name: git-update-manifest
+      runAfter:
+        - buildah
+      workspaces:
+        - name: source
+          workspace: source
+        - name: basic-auth
+          workspace: git-credentials
+      taskSpec:
+        workspaces:
+          - name: source
+          - name: basic-auth
+        params:
+          - name: IMAGE_DIGEST
+            type: string
+          - name: IMAGE_REGISTRY
+            type: string
+          - name: DEPLOY_MANIFEST_PATH
+            type: string
+          - name: GIT_URL
+            type: string
+          - name: GIT_REVISION
+            type: string
+          - name: GIT_USER_NAME
+            type: string
+          - name: GIT_USER_EMAIL
+            type: string
+        steps:
+          - name: update-and-push
+            image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+            workingDir: $(workspaces.source.path)
+            env:
+              - name: GIT_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: git-push-secret
+                    key: username
+              - name: GIT_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: git-push-secret
+                    key: password
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              IMAGE_REF="$(params.IMAGE_REGISTRY)@$(params.IMAGE_DIGEST)"
+              MANIFEST="$(params.DEPLOY_MANIFEST_PATH)"
+
+              echo "Updating ${MANIFEST} with image: ${IMAGE_REF}"
+
+              # Use sed to replace the image line in the deployment manifest
+              sed -i "s|image:.*|image: ${IMAGE_REF}|g" "${MANIFEST}"
+
+              echo "--- Updated manifest snippet ---"
+              grep "image:" "${MANIFEST}"
+
+              # Configure git
+              git config user.name "$(params.GIT_USER_NAME)"
+              git config user.email "$(params.GIT_USER_EMAIL)"
+
+              # Set up credentials via git credential store
+              git config credential.helper store
+              echo "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com" > ~/.git-credentials
+              chmod 600 ~/.git-credentials
+
+              # Commit and push
+              git add "${MANIFEST}"
+              git commit -m "ci: update image to ${IMAGE_REF} [skip ci]"
+              git push origin HEAD:$(params.GIT_REVISION)
+
+              echo "Successfully pushed updated manifest to git"
+      params:
+        - name: IMAGE_DIGEST
+          value: $(tasks.buildah.results.IMAGE_DIGEST)
+        - name: IMAGE_REGISTRY
+          value: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app
+        - name: DEPLOY_MANIFEST_PATH
+          value: $(params.DEPLOY_MANIFEST_PATH)
+        - name: GIT_URL
+          value: $(params.GIT_URL)
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: GIT_USER_NAME
+          value: $(params.GIT_USER_NAME)
+        - name: GIT_USER_EMAIL
+          value: $(params.GIT_USER_EMAIL)
+
+    # Task 4: Trigger ArgoCD sync of the deploy application
+    # Calls the ArgoCD REST API to immediately sync paas-demo-deploy after the manifest update
+    - name: argocd-sync-deploy
+      runAfter:
+        - git-update-manifest
+      taskSpec:
+        params:
+          - name: ARGOCD_SERVER
+            type: string
+          - name: ARGOCD_APP
+            type: string
+        steps:
+          - name: sync
+            image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+            env:
+              - name: ARGOCD_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: argocd-token
+                    key: token
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              echo "Triggering ArgoCD sync for application: $(params.ARGOCD_APP)"
+
+              HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" \
+                -X POST \
+                -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
+                -H "Content-Type: application/json" \
+                "https://$(params.ARGOCD_SERVER)/api/v1/applications/$(params.ARGOCD_APP)/sync")
+
+              echo "ArgoCD API response code: ${HTTP_CODE}"
+
+              if [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 300 ]; then
+                echo "Successfully triggered sync for $(params.ARGOCD_APP)"
+              else
+                echo "WARNING: ArgoCD sync request returned HTTP ${HTTP_CODE}"
+                echo "The deploy application will still sync automatically via selfHeal."
+                # Do not fail the pipeline - automated sync will catch up
+              fi
+      params:
+        - name: ARGOCD_SERVER
+          value: argocd-server.example-paas-argocd.svc
+        - name: ARGOCD_APP
+          value: paas-demo-deploy

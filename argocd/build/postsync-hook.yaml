@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trigger-paas-demo-pipeline
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+  annotations:
+    # Run this Job after the ArgoCD sync of paas-demo-build completes successfully
+    argocd.argoproj.io/hook: PostSync
+    # Delete the Job automatically once it succeeds
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: paas-demo-app
+    spec:
+      serviceAccountName: argocd-hook
+      restartPolicy: Never
+      containers:
+        - name: trigger
+          image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              echo "Creating PipelineRun for paas-demo-app-pipeline..."
+
+              kubectl create -f - <<'EOF'
+              apiVersion: tekton.dev/v1
+              kind: PipelineRun
+              metadata:
+                generateName: paas-demo-app-run-
+                namespace: example-paas-tekton
+                labels:
+                  app: paas-demo-app
+                  triggered-by: argocd-postsync
+              spec:
+                pipelineRef:
+                  name: paas-demo-app-pipeline
+                serviceAccountName: paas-demo-pipeline
+                params:
+                  - name: GIT_URL
+                    value: https://github.com/benoitschipper/paas-demo-app.git
+                  - name: GIT_REVISION
+                    value: main
+                  - name: IMAGE
+                    value: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
+                  - name: DEPLOY_MANIFEST_PATH
+                    value: argocd/deploy/deployment.yaml
+                workspaces:
+                  - name: source
+                    volumeClaimTemplate:
+                      spec:
+                        accessModes:
+                          - ReadWriteOnce
+                        resources:
+                          requests:
+                            storage: 1Gi
+                  - name: git-credentials
+                    secret:
+                      secretName: git-push-secret
+              EOF
+
+              echo "PipelineRun created successfully."

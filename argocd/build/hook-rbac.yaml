@@ -1,0 +1,35 @@
+---
+# Role granting the argocd-hook ServiceAccount permission to create PipelineRuns
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-hook-pipelinerun-creator
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+rules:
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelineruns
+    verbs:
+      - create
+      - get
+      - list
+---
+# Bind the argocd-hook ServiceAccount to the pipelinerun-creator Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-hook-pipelinerun-creator
+  namespace: example-paas-tekton
+  labels:
+    app: paas-demo-app
+subjects:
+  - kind: ServiceAccount
+    name: argocd-hook
+    namespace: example-paas-tekton
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-hook-pipelinerun-creator

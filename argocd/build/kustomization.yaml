@@ -2,4 +2,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - git-push-secret.yaml
+  - argocd-token
+  - serviceaccount.yaml
+  - rbac.yaml
+  - pipeline.yaml
+  - hook-serviceaccount.yaml
+  - hook-rbac.yaml
+  - postsync-hook.yaml
