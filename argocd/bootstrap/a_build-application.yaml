@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paas-demo-build
+  namespace: example-paas-argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/benoitschipper/paas-demo-app.git
+    targetRevision: main
+    path: argocd/build
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: example-paas-tekton
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=false
+      - RespectIgnoreDifferences=true
