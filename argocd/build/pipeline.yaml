@@ -131,9 +131,10 @@ spec:
               git config user.email "tekton-pipeline@paas-demo"
               git config user.name "Tekton Pipeline"
 
-              # Build the full digest-pinned image reference
-              # IMAGE may end with :latest or :tag — strip any tag/digest first
-              BASE_IMAGE=$(echo "${IMAGE}" | sed 's|:[^@]*$||' | sed 's|@sha256:.*$||')
+              # Build the full digest-pinned image reference.
+              # IMAGE is e.g. image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
+              # Strip the trailing :tag using greedy match — keeps registry host:port and full repo path.
+              BASE_IMAGE=$(echo "${IMAGE}" | sed 's|\(.*\):.*|\1|')
               DIGEST_REF="${BASE_IMAGE}@${IMAGE_DIGEST}"
 
               echo "Updating argocd/deploy/deployment.yaml image to: ${DIGEST_REF}"
