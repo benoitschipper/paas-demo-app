@@ -1,0 +1,76 @@
+name: Build, Push & Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: quay.io
+  IMAGE_NAME: your-org/paas-demo-app
+
+jobs:
+  build-push:
+    name: Build and Push Container Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set image tag from commit SHA
+        id: meta
+        run: |
+          TAG="${{ github.sha }}"
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Containerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          labels: |
+            git-commit=${{ github.sha }}
+            git-ref=${{ github.ref }}
+
+  deploy:
+    name: Deploy to OpenShift
+    runs-on: ubuntu-latest
+    needs: build-push
+    steps:
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Log in to OpenShift
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OC_SERVER }}
+          openshift_token: ${{ secrets.OC_TOKEN }}
+          namespace: ${{ secrets.OC_NAMESPACE }}
+          insecure_skip_tls_verify: false
+
+      - name: Update Deployment image and rollout
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-push.outputs.image_tag }}"
+          oc set image deployment/paas-demo-app \
+            paas-demo-app="${IMAGE}" \
+            -n "${{ secrets.OC_NAMESPACE }}"
+          oc rollout status deployment/paas-demo-app \
+            -n "${{ secrets.OC_NAMESPACE }}" \
+            --timeout=120s
+          echo "✅ Deployed ${IMAGE} to ${{ secrets.OC_NAMESPACE }}"

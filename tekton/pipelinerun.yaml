@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: paas-demo-app-run-
+  labels:
+    app: paas-demo-app
+spec:
+  pipelineRef:
+    name: paas-demo-app-pipeline
+  serviceAccountName: paas-demo-pipeline
+  params:
+    - name: GIT_URL
+      value: https://github.com/your-org/paas-demo-app.git
+    - name: GIT_REVISION
+      value: main
+    - name: IMAGE
+      # Update this tag to the desired commit SHA before triggering
+      value: quay.io/your-org/paas-demo-app:latest
+    - name: NAMESPACE
+      value: paas-demo
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

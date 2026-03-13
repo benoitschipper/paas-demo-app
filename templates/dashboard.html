@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MISSION CONTROL // DEFENSIE OPERATIONEEL CENTRUM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    body { font-family: 'Share Tech Mono', 'Courier New', monospace; }
+    .scanline {
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.05) 2px,
+        rgba(0,0,0,0.05) 4px
+      );
+      pointer-events: none;
+    }
+    .crt-border { box-shadow: 0 0 0 1px rgba(74,222,128,0.3), inset 0 0 20px rgba(0,0,0,0.5); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .blink { animation: blink 1s step-end infinite; }
+    @keyframes pulse-glow {
+      0%,100% { box-shadow: 0 0 5px currentColor, 0 0 10px currentColor; }
+      50%      { box-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+    }
+    .pulse-glow { animation: pulse-glow 1.5s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-300 min-h-screen flex flex-col">
+
+  <!-- Scanline overlay -->
+  <div class="fixed inset-0 scanline z-50 pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="border-b border-slate-700 bg-slate-900/80 backdrop-blur px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="text-emerald-400 text-xl font-bold tracking-widest">⬡ DEFENSIE OPS</div>
+      <div class="text-slate-500 text-xs tracking-widest">MINISTERIE VAN DEFENSIE // OPERATIONEEL CENTRUM</div>
+    </div>
+    <div class="flex items-center gap-6 text-xs text-slate-500">
+      <span>SYS: <span class="text-emerald-400">ONLINE</span></span>
+      <span>NET: <span class="text-emerald-400">SECURE</span></span>
+      <span>CLASS: <span class="text-amber-400">NATO RESTRICTED</span></span>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- THREAT LEVEL — spans full width, visually dominant -->
+    <section class="lg:col-span-3">
+      <div class="border-2 {{ .Classes.Border }} {{ .Classes.Background }} rounded p-6 text-center {{ if .Classes.Pulse }}pulse-glow{{ end }} crt-border">
+        <div class="text-xs tracking-widest text-slate-400 mb-2">▶ CURRENT THREAT ASSESSMENT ◀</div>
+        <div class="text-6xl font-bold tracking-widest {{ .Classes.Text }} mb-2">
+          THREAT LEVEL: {{ .ThreatLevel }}
+        </div>
+        <div class="text-xs tracking-widest text-slate-500 mt-2">
+          {{ if eq .ThreatLevel "GREEN" }}SITUATION NORMAL — ALL UNITS NOMINAL{{ end }}
+          {{ if eq .ThreatLevel "AMBER" }}ELEVATED ALERT — INCREASED VIGILANCE REQUIRED{{ end }}
+          {{ if eq .ThreatLevel "RED" }}CRITICAL ALERT — IMMEDIATE ACTION REQUIRED{{ end }}
+          {{ if eq .ThreatLevel "BLACK" }}MAXIMUM ALERT — EXECUTE EMERGENCY PROTOCOLS{{ end }}
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Readiness -->
+    <section class="border border-slate-700 bg-slate-900/60 rounded p-5 crt-border">
+      <h2 class="text-emerald-400 text-xs tracking-widest mb-4 border-b border-slate-700 pb-2">
+        ▶ MISSION READINESS
+      </h2>
+      <div class="text-5xl font-bold text-emerald-400 mb-3">94<span class="text-2xl">%</span></div>
+      <div class="w-full bg-slate-800 rounded-full h-3 mb-4">
+        <div class="bg-emerald-500 h-3 rounded-full" style="width: 94%"></div>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between">
+          <span class="text-slate-400">PERSONNEL</span>
+          <span class="text-emerald-400">98%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">EQUIPMENT</span>
+          <span class="text-emerald-400">91%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">LOGISTICS</span>
+          <span class="text-amber-400">87%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">COMMUNICATIONS</span>
+          <span class="text-emerald-400">99%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Unit Status -->
+    <section class="border border-slate-700 bg-slate-900/60 rounded p-5 crt-border">
+      <h2 class="text-emerald-400 text-xs tracking-widest mb-4 border-b border-slate-700 pb-2">
+        ▶ UNIT STATUS
+      </h2>
+      <div class="space-y-3 text-xs">
+        <div class="flex items-center justify-between border border-slate-800 rounded px-3 py-2">
+          <div>
+            <div class="text-slate-200 font-bold">ALPHA-1</div>
+            <div class="text-slate-500">11 Luchtmobiele Brigade</div>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-700">OPERATIONAL</span>
+        </div>
+        <div class="flex items-center justify-between border border-slate-800 rounded px-3 py-2">
+          <div>
+            <div class="text-slate-200 font-bold">BRAVO-2</div>
+            <div class="text-slate-500">13 Lichte Brigade</div>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-700">OPERATIONAL</span>
+        </div>
+        <div class="flex items-center justify-between border border-slate-800 rounded px-3 py-2">
+          <div>
+            <div class="text-slate-200 font-bold">CHARLIE-3</div>
+            <div class="text-slate-500">Korps Mariniers</div>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-bold bg-amber-900/50 text-amber-400 border border-amber-700">STANDBY</span>
+        </div>
+        <div class="flex items-center justify-between border border-slate-800 rounded px-3 py-2">
+          <div>
+            <div class="text-slate-200 font-bold">DELTA-4</div>
+            <div class="text-slate-500">Defensie Cyber Commando</div>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-bold bg-emerald-900/50 text-emerald-400 border border-emerald-700">OPERATIONAL</span>
+        </div>
+        <div class="flex items-center justify-between border border-slate-800 rounded px-3 py-2">
+          <div>
+            <div class="text-slate-200 font-bold">ECHO-5</div>
+            <div class="text-slate-500">Commando Luchtstrijdkrachten</div>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-bold bg-red-900/50 text-red-400 border border-red-700">OFFLINE</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Operations -->
+    <section class="border border-slate-700 bg-slate-900/60 rounded p-5 crt-border">
+      <h2 class="text-emerald-400 text-xs tracking-widest mb-4 border-b border-slate-700 pb-2">
+        ▶ ACTIVE OPERATIONS
+      </h2>
+      <div class="space-y-3 text-xs">
+        <div class="border border-slate-800 rounded px-3 py-2">
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-slate-200 font-bold">OP IRON SENTINEL</span>
+            <span class="text-emerald-400 text-xs">ACTIVE</span>
+          </div>
+          <div class="text-slate-500">Baltic Region // NATO RESTRICTED</div>
+          <div class="text-slate-600 mt-1">Phase 2 of 4 — Reconnaissance</div>
+        </div>
+        <div class="border border-slate-800 rounded px-3 py-2">
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-slate-200 font-bold">OP STEEL HORIZON</span>
+            <span class="text-amber-400 text-xs">PENDING</span>
+          </div>
+          <div class="text-slate-500">North Sea // NATO RESTRICTED</div>
+          <div class="text-slate-600 mt-1">Awaiting authorisation — H+4</div>
+        </div>
+        <div class="border border-slate-800 rounded px-3 py-2">
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-slate-200 font-bold">OP CYBER SHIELD</span>
+            <span class="text-emerald-400 text-xs">ACTIVE</span>
+          </div>
+          <div class="text-slate-500">Cyberspace // UNCLASSIFIED</div>
+          <div class="text-slate-600 mt-1">Continuous monitoring — 24/7</div>
+        </div>
+        <div class="border border-slate-800 rounded px-3 py-2">
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-slate-200 font-bold">OP GOLDEN ARROW</span>
+            <span class="text-slate-500 text-xs">COMPLETE</span>
+          </div>
+          <div class="text-slate-500">Mediterranean // NATO RESTRICTED</div>
+          <div class="text-slate-600 mt-1">Concluded 2026-03-12 // AAR pending</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Status (full width) -->
+    <section class="lg:col-span-3 border border-slate-700 bg-slate-900/60 rounded p-4 crt-border">
+      <div class="flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div class="flex items-center gap-6">
+          <span class="text-slate-500">PLATFORM</span>
+          <span class="text-emerald-400 font-bold">OpenShift // Ministerie van Defensie PaaS</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-slate-500">TIMESTAMP</span>
+          <span class="text-slate-300">{{ .Timestamp }}</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-slate-500">UPTIME</span>
+          <span class="text-slate-300">{{ .Uptime }}</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-slate-500">BUILD</span>
+          <span class="text-slate-300">{{ .Version }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 blink"></span>
+          <span class="text-emerald-400">SYSTEMS NOMINAL</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 px-6 py-2 text-center text-xs text-slate-600">
+    MINISTERIE VAN DEFENSIE // OPERATIONEEL CENTRUM // VOOR NEDERLAND
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,123 @@
+---
+# ServiceAccount for the pipeline
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: paas-demo-pipeline
+  namespace: example-paas-dev
+---
+# Allow the pipeline SA to push to the internal registry and manage the Deployment
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: paas-demo-pipeline-edit
+  namespace: example-paas-dev
+subjects:
+  - kind: ServiceAccount
+    name: paas-demo-pipeline
+    namespace: example-paas-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+---
+# Allow the pipeline SA to push images to the internal registry in this namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: paas-demo-pipeline-registry-editor
+  namespace: example-paas-dev
+subjects:
+  - kind: ServiceAccount
+    name: paas-demo-pipeline
+    namespace: example-paas-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:image-builder
+---
+# The Pipeline: git-clone → buildah → oc rollout
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: paas-demo-app-pipeline
+  namespace: example-paas-dev
+spec:
+  params:
+    - name: GIT_URL
+      type: string
+      description: Git repository URL
+    - name: GIT_REVISION
+      type: string
+      default: main
+    - name: IMAGE
+      type: string
+      description: Full image reference to build and push
+  workspaces:
+    - name: source
+  tasks:
+    - name: git-clone
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: $(params.GIT_URL)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: deleteExisting
+          value: "true"
+    - name: buildah
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "false"
+    - name: deploy
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: openshift-client
+          - name: namespace
+            value: openshift-pipelines
+      runAfter:
+        - buildah
+      params:
+        - name: SCRIPT
+          value: |
+            oc set image deployment/paas-demo-app \
+              paas-demo-app=$(params.IMAGE) \
+              -n example-paas-dev
+            oc rollout status deployment/paas-demo-app \
+              -n example-paas-dev \
+              --timeout=120s
