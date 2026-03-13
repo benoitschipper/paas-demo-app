@@ -26,7 +26,7 @@ spec:
         - name: paas-demo-app
           # Image digest is updated automatically by the Tekton git-commit-push task after each build.
           # Do not edit this field manually — it will be overwritten on the next pipeline run.
-          image: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app@sha256:aed7de28a34a742e21291c3295babd16a98122d9caf90c5535ddf12282274a22
+          image: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app@sha256:6b0db4dfd7cb54fe462995896ffa351d86c6b649ba0845230275c1d63808d5e2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
