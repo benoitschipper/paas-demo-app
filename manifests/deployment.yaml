@@ -24,7 +24,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: paas-demo-app
-          image: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
+          image: ghcr.io/benoitschipper/paas-demo-app:latest
           imagePullPolicy: Always
           ports:
             - name: http
