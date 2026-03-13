@@ -65,9 +65,6 @@ spec:
                         resources:
                           requests:
                             storage: 1Gi
-                  - name: git-credentials
-                    secret:
-                      secretName: git-push-secret
               EOF
 
               echo "PipelineRun created successfully."

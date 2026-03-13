@@ -34,8 +34,6 @@ spec:
   workspaces:
     - name: source
       description: Shared workspace for source code and git operations
-    - name: git-credentials
-      description: Secret workspace containing git credentials (username/password)
 
   results:
     - name: IMAGE_DIGEST
@@ -44,6 +42,7 @@ spec:
 
   tasks:
     # Task 1: Clone the Git repository
+    # Uses the argocd-token secret (GitHub PAT) for authentication
     - name: git-clone
       taskRef:
         resolver: hub
@@ -61,8 +60,6 @@ spec:
       workspaces:
         - name: output
           workspace: source
-        - name: basic-auth
-          workspace: git-credentials
       params:
         - name: url
           value: $(params.GIT_URL)
@@ -104,6 +101,7 @@ spec:
           value: "--label git-commit=$(params.GIT_REVISION)"
 
     # Task 3: Update the deployment manifest with the new image digest and push to git
+    # Uses argocd-token (GitHub PAT) for git authentication
     # ArgoCD then detects the change and rolls out the new image in example-paas-dev
     - name: git-update-manifest
       runAfter:
@@ -111,12 +109,9 @@ spec:
       workspaces:
         - name: source
           workspace: source
-        - name: basic-auth
-          workspace: git-credentials
       taskSpec:
         workspaces:
           - name: source
-          - name: basic-auth
         params:
           - name: IMAGE_DIGEST
             type: string
@@ -137,16 +132,11 @@ spec:
             image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
             workingDir: $(workspaces.source.path)
             env:
-              - name: GIT_USERNAME
+              - name: GIT_TOKEN
                 valueFrom:
                   secretKeyRef:
-                    name: git-push-secret
-                    key: username
-              - name: GIT_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: git-push-secret
-                    key: password
+                    name: argocd-token
+                    key: token
             script: |
               #!/usr/bin/env bash
               set -euo pipefail
@@ -166,9 +156,9 @@ spec:
               git config user.name "$(params.GIT_USER_NAME)"
               git config user.email "$(params.GIT_USER_EMAIL)"
 
-              # Set up credentials via git credential store
+              # Set up credentials via git credential store (token as password / PAT)
               git config credential.helper store
-              echo "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com" > ~/.git-credentials
+              echo "https://oauth2:${GIT_TOKEN}@github.com" > ~/.git-credentials
               chmod 600 ~/.git-credentials
 
               # Commit and push
