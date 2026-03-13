@@ -4,7 +4,7 @@ metadata:
   name: paas-demo-app-listener
   namespace: example-paas-tekton
 spec:
-  serviceAccountName: paas-demo-pipeline
+  serviceAccountName: pipeline
   triggers:
     - name: github-push
       bindings:

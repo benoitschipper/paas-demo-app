@@ -6,7 +6,6 @@ resources:
   - image-puller-rolebinding.yaml
   - serviceaccount.yaml
   - rolebindings.yaml
-  - eventlistener-rbac.yaml
   - pipeline.yaml
   - triggerbinding.yaml
   - triggertemplate.yaml
