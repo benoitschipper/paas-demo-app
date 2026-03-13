@@ -3,12 +3,3 @@ kind: Kustomization
 
 resources:
   - git-push-secret.yaml
-  - serviceaccount.yaml
-  - rbac.yaml
-  - pvc.yaml
-  - pipeline.yaml
-  - triggerbinding.yaml
-  - triggertemplate.yaml
-  - eventlistener-sa.yaml
-  - eventlistener.yaml
-  - eventlistener-route.yaml
