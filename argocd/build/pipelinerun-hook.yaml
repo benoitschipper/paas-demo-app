@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: paas-demo-app-hook
+  namespace: example-paas-tekton
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  pipelineRef:
+    name: paas-demo-app-pipeline
+  params:
+    - name: GIT_URL
+      value: https://github.com/benoitschipper/paas-demo-app.git
+    - name: GIT_REVISION
+      value: main
+    - name: IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
