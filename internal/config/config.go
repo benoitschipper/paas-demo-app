@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// ThreatLevel is the demo's "wow moment" — change this single line and push.
+// ThreatLevel is the demo's — change this single line and push.
 // Valid values: "GREEN", "AMBER", "RED", "BLACK"
 const ThreatLevel = "GREEN"
 

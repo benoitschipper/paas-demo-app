@@ -4,18 +4,18 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: paas-demo-pipeline
-  namespace: example-paas-dev
+  namespace: example-paas-tekton
 ---
 # Allow the pipeline SA to push to the internal registry and manage the Deployment
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: paas-demo-pipeline-edit
-  namespace: example-paas-dev
+  namespace: example-paas-tekton
 subjects:
   - kind: ServiceAccount
     name: paas-demo-pipeline
-    namespace: example-paas-dev
+    namespace: example-paas-tekton
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -26,11 +26,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: paas-demo-pipeline-registry-editor
-  namespace: example-paas-dev
+  namespace: example-paas-tekton
 subjects:
   - kind: ServiceAccount
     name: paas-demo-pipeline
-    namespace: example-paas-dev
+    namespace: example-paas-tekton
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -41,7 +41,7 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: paas-demo-app-pipeline
-  namespace: example-paas-dev
+  namespace: example-paas-tekton
 spec:
   params:
     - name: GIT_URL
@@ -70,11 +70,11 @@ spec:
         - name: output
           workspace: source
       params:
-        - name: url
+        - name: URL
           value: $(params.GIT_URL)
-        - name: revision
+        - name: REVISION
           value: $(params.GIT_REVISION)
-        - name: deleteExisting
+        - name: DELETE_EXISTING
           value: "true"
     - name: buildah
       taskRef:
@@ -98,7 +98,7 @@ spec:
           value: ./Containerfile
         - name: CONTEXT
           value: .
-        - name: TLSVERIFY
+        - name: TLS_VERIFY
           value: "false"
     - name: deploy
       taskRef:
@@ -117,7 +117,7 @@ spec:
           value: |
             oc set image deployment/paas-demo-app \
               paas-demo-app=$(params.IMAGE) \
-              -n example-paas-dev
+              -n example-paas-tekton
             oc rollout status deployment/paas-demo-app \
-              -n example-paas-dev \
+              -n example-paas-tekton \
               --timeout=120s
