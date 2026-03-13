@@ -11,7 +11,7 @@ import (
 
 // ThreatLevel is the demo's — change this single line and push.
 // Valid values: "GREEN", "AMBER", "RED", "BLACK"
-const ThreatLevel = "AMBER"
+const ThreatLevel = "GREEN"
 
 // Level represents a validated threat level.
 type Level string
