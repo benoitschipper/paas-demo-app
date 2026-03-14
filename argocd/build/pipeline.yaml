@@ -34,8 +34,6 @@ spec:
   workspaces:
     - name: source
       description: Shared workspace for source code and git operations
-    - name: git-credentials
-      description: Secret workspace containing git credentials (username/password)
 
   results:
     - name: IMAGE_DIGEST
@@ -61,8 +59,6 @@ spec:
       workspaces:
         - name: output
           workspace: source
-        - name: basic-auth
-          workspace: git-credentials
       params:
         - name: url
           value: $(params.GIT_URL)
@@ -111,12 +107,9 @@ spec:
       workspaces:
         - name: source
           workspace: source
-        - name: basic-auth
-          workspace: git-credentials
       taskSpec:
         workspaces:
           - name: source
-          - name: basic-auth
         params:
           - name: IMAGE_DIGEST
             type: string
