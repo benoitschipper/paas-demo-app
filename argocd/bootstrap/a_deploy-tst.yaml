@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paas-demo-deploy-tst
+  namespace: example-paas-argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/benoitschipper/paas-demo-app.git
+    targetRevision: main
+    path: argocd/deploy/tst
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: example-paas-tst
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
