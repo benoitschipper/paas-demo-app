@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: paas-demo-deploy
+  name: paas-demo-build
   namespace: example-paas-argocd
 spec:
   project: default
@@ -11,7 +11,7 @@ spec:
     path: argocd/build
   destination:
     server: https://kubernetes.default.svc
-    namespace: example-paas-dev
+    namespace: example-paas-tekton
   syncPolicy:
     automated:
       prune: false
