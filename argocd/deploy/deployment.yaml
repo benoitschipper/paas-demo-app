@@ -33,7 +33,10 @@ spec:
             - name: PORT
               value: "8080"
             - name: THREAT_LEVEL
-              value: "GREEN" # `GREEN`, `AMBER`, `RED`, `BLACK`
+              valueFrom:
+                configMapKeyRef:
+                  name: paas-demo-app-config
+                  key: THREAT_LEVEL
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

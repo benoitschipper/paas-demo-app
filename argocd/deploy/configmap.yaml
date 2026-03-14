@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paas-demo-app-config
+  labels:
+    app: paas-demo-app
+    app.kubernetes.io/name: paas-demo-app
+    app.kubernetes.io/component: frontend
+data:
+  THREAT_LEVEL: "RED" # `GREEN`, `AMBER`, `RED`, `BLACK`
