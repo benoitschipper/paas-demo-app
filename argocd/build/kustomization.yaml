@@ -4,6 +4,6 @@ kind: Kustomization
 resources:
 #  - deploy-pipeline.yaml (not needed as we deploy via git)
   - pipeline.yaml
-  - pipelinerun.yaml
+#  - pipelinerun.yaml (Build via Gitlab for Demo)
   - rbac.yaml
   - serviceaccount.yaml
