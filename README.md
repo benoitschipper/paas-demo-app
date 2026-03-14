@@ -1,6 +1,6 @@
 # 🎖️ Defensie Mission Control — OpenShift Demo App
 
-A military-themed Mission Status Dashboard built for a live booth demonstration at the **Dutch Ministry of Defence (Ministerie van Defensie)**. It showcases how fast a code change goes from commit to production on OpenShift.
+A military-themed Mission Status Dashboard built for a live booth demonstration at the **Ministry of Defence (Ministerie van Defensie)**. It showcases how fast a code change goes from commit to production on OpenShift.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

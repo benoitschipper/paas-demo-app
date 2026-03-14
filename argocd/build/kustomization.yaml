@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+#  - deploy-pipeline.yaml (not needed as we deploy via git)
+  - pipeline.yaml
+  - pipelinerun.yaml
+  - rbac.yaml
+  - serviceaccount.yaml

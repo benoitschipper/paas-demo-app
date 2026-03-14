@@ -17,7 +17,6 @@ spec:
         app: paas-demo-app
         app.kubernetes.io/name: paas-demo-app
     spec:
-      # restricted-v2 SCC compliance: no root, no privilege escalation
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -33,6 +32,8 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            - name: THREAT_LEVEL
+              value: "GREEN" # `GREEN`, `AMBER`, `RED`, `BLACK`
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

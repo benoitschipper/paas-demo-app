@@ -1,6 +1,8 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
   name: paas-demo-app-pipeline
   labels:
     app: paas-demo-app
