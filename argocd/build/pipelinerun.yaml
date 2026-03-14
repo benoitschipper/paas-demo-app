@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: paas-demo-app-run-
+  name: paas-demo-app-run
   labels:
     app: paas-demo-app
 spec:
