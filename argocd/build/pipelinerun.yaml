@@ -10,14 +10,11 @@ spec:
   serviceAccountName: paas-demo-pipeline
   params:
     - name: GIT_URL
-      value: https://github.com/your-org/paas-demo-app.git
+      value: https://github.com/benoitschipper/paas-demo-app.git
     - name: GIT_REVISION
       value: main
     - name: IMAGE
-      # Update this tag to the desired commit SHA before triggering
-      value: quay.io/your-org/paas-demo-app:latest
-    - name: NAMESPACE
-      value: paas-demo
+      value: image-registry.openshift-image-registry.svc:5000/example-paas-tekton/paas-demo-app:latest
   workspaces:
     - name: source
       volumeClaimTemplate:
