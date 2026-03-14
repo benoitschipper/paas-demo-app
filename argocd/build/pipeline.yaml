@@ -56,21 +56,8 @@ spec:
         - name: deleteExisting
           value: "true"
 
-    # Task 2: Build and push the container image to the internal OpenShift registry
+    # Task 2: Build and push the container image (rootless buildah, compatible with pipelines-scc)
     - name: buildah
-      taskRef:
-        resolver: hub
-        params:
-          - name: catalog
-            value: tekton-catalog-tasks
-          - name: type
-            value: artifact
-          - name: kind
-            value: task
-          - name: name
-            value: buildah
-          - name: version
-            value: "0.7"
       runAfter:
         - git-clone
       workspaces:
@@ -79,11 +66,47 @@ spec:
       params:
         - name: IMAGE
           value: $(params.IMAGE)
-        - name: DOCKERFILE
-          value: ./Dockerfile
-        - name: CONTEXT
-          value: .
-        - name: TLSVERIFY
-          value: "true"
-        - name: BUILD_EXTRA_ARGS
-          value: "--label git-commit=$(params.GIT_REVISION)"
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+      taskSpec:
+        params:
+          - name: IMAGE
+            type: string
+          - name: GIT_REVISION
+            type: string
+        workspaces:
+          - name: source
+        results:
+          - name: IMAGE_DIGEST
+            description: Digest of the built image
+        steps:
+          - name: build-and-push
+            image: registry.redhat.io/rhel8/buildah:latest
+            workingDir: $(workspaces.source.path)
+            securityContext:
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                  - ALL
+            env:
+              - name: STORAGE_DRIVER
+                value: vfs
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              buildah --storage-driver=vfs bud \
+                --label git-commit=$(params.GIT_REVISION) \
+                --format=oci \
+                -t $(params.IMAGE) \
+                -f ./Dockerfile \
+                .
+
+              buildah --storage-driver=vfs push \
+                --digestfile /tmp/image-digest \
+                $(params.IMAGE) \
+                docker://$(params.IMAGE)
+
+              cat /tmp/image-digest | tee $(results.IMAGE_DIGEST.path)
