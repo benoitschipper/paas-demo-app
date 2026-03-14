@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - a_deploy-application.yaml
-  - a_build-application.yaml
+  # - a_build-application.yaml
