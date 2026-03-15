@@ -32,20 +32,54 @@ const ThreatLevel = "GREEN"   // → "AMBER", "RED", or "BLACK"
 
 ## 🏗️ Architecture
 
+### Demo Flow (actual)
+
+For the demo we pre-build the container image via **GitHub Actions** (see [`.github/workflows/`](.github/workflows/)) and push it to the registry. This keeps the demo snappy — no waiting for an in-cluster build during the limited booth time.
+
+```mermaid
+flowchart TD
+    A([👨‍💻 Code change\npush to GitHub]) --> B[GitHub Actions\nCI/CD workflow]
+    B --> C[(Container Registry\ne.g. ghcr.io)]
+    C --> D
+
+    subgraph ArgoCD Bootstrap ["ArgoCD Bootstrap (argocd/bootstrap/)"]
+        D[ArgoCD Application\npaas-demo-build\n→ argocd/build/]
+        E[ArgoCD Application\npaas-demo-deploy-dev\n→ argocd/deploy/dev/]
+        F[ArgoCD Application\npaas-demo-deploy-tst\n→ argocd/deploy/tst/]
+        G[ArgoCD Application\npaas-demo-deploy-acc\n→ argocd/deploy/acc/]
+        H[ArgoCD Application\npaas-demo-deploy-prd\n→ argocd/deploy/prd/]
+    end
+
+    D -->|Syncs Tekton resources| NS_TEKTON[Namespace\nexample-paas-tekton\nPipeline + RBAC + SA]
+    E -->|Syncs manifests| NS_DEV[Namespace\nexample-paas-dev\nDeployment · Service · Route]
+    F -->|Syncs manifests| NS_TST[Namespace\nexample-paas-tst\nDeployment · Service · Route]
+    G -->|Syncs manifests| NS_ACC[Namespace\nexample-paas-acc\nDeployment · Service · Route]
+    H -->|Syncs manifests| NS_PRD[Namespace\nexample-paas-prd\nDeployment · Service · Route]
+
+    NS_DEV --> APP([🖥️ Mission Status Dashboard\nGo HTTP Server :8080])
+    NS_TST --> APP
+    NS_ACC --> APP
+    NS_PRD --> APP
+```
+
+### Full GitOps Flow (with in-cluster Tekton build)
+
+The [`argocd/build/`](argocd/build/) directory contains a **reference Tekton setup** showing how an in-cluster build pipeline would look. It is **not used during the demo** — it is included as an example of how you would wire up Tekton on OpenShift for a real production pipeline.
+
 ```
 Git Push
    │
    ▼
-Tekton Pipeline (on OpenShift)
+Tekton Pipeline (on OpenShift)          ← example only (argocd/build/)
    ├── git-clone
-   ├── buildah (build + push to Quay.io)
-   └── oc set image (update Deployment)
+   ├── buildah (build + push to registry)
+   └── oc rollout (trigger deployment)
          │
          ▼
    ArgoCD (GitOps sync)
          │
          ▼
-   OpenShift Deployment
+   OpenShift Deployment (per environment)
          │
          ▼
    Go HTTP Server (port 8080)
@@ -55,7 +89,7 @@ Tekton Pipeline (on OpenShift)
    └── GET /ready     → Readiness probe {"status":"ready"}
 ```
 
-**Stack:** Go 1.25.8 · HTMX · Tailwind CSS (CDN) · Prometheus · Tekton · ArgoCD · OpenShift 4.x
+**Stack:** Go · HTMX · Tailwind CSS (CDN) · Prometheus · Tekton (example) · ArgoCD · OpenShift 4.x
 
 ## 🚀 Quick Start (local)
 
@@ -102,19 +136,27 @@ docker run --read-only -p 8080:8080 quay.io/your-org/paas-demo-app:dev
 │   ├── handlers/               # HTTP handlers (dashboard, health, ready)
 │   └── metrics/metrics.go      # Prometheus metrics registration
 ├── templates/dashboard.html    # Military-themed HTML template (HTMX + Tailwind)
-├── manifests/                  # OpenShift/Kubernetes manifests (ArgoCD-ready)
-│   ├── deployment.yaml         # restricted-v2 SCC compliant
-│   ├── service.yaml
-│   ├── route.yaml              # TLS edge termination
-│   ├── servicemonitor.yaml     # Prometheus scraping
-│   └── kustomization.yaml
-├── tekton/                     # Tekton Pipeline (build → push → deploy)
-│   ├── pipeline.yaml
-│   ├── pipelinerun.yaml
-│   ├── serviceaccount.yaml
-│   └── rbac.yaml
-├── .github/workflows/          # GitHub Actions fallback CI/CD
-│   └── deploy.yaml
+├── argocd/
+│   ├── bootstrap/              # ArgoCD Applications — apply once to bootstrap the platform
+│   │   ├── a_build-application.yaml   # → deploys Tekton resources into example-paas-tekton
+│   │   ├── a_deploy-dev.yaml          # → deploys app into example-paas-dev
+│   │   ├── a_deploy-tst.yaml          # → deploys app into example-paas-tst
+│   │   ├── a_deploy-acc.yaml          # → deploys app into example-paas-acc
+│   │   ├── a_deploy-prd.yaml          # → deploys app into example-paas-prd
+│   │   └── kustomization.yaml
+│   ├── build/                  # ⚠️ EXAMPLE ONLY — reference Tekton setup (not used in demo)
+│   │   ├── pipeline.yaml              # Tekton Pipeline: git-clone → buildah → push
+│   │   ├── deploy-pipeline.yaml       # Alternative pipeline with oc rollout step
+│   │   ├── serviceaccount.yaml        # SA for the pipeline
+│   │   ├── rbac.yaml                  # RoleBindings for build + image-push
+│   │   └── kustomization.yaml
+│   └── deploy/                 # Kustomize overlays per environment
+│       ├── generic/            # Base manifests (Deployment, Service, Route, …)
+│       ├── dev/                # Dev overlay
+│       ├── tst/                # Test overlay
+│       ├── acc/                # Acceptance overlay
+│       └── prd/                # Production overlay
+├── .github/workflows/          # GitHub Actions — pre-builds the image for the demo
 ├── Containerfile               # Multi-stage build → distroless nonroot (~20 MB)
 └── DEMO_RUNBOOK.md             # Step-by-step demo script
 ```
