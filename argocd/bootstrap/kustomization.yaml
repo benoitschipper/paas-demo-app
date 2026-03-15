@@ -7,3 +7,4 @@ resources:
   - a_deploy-tst.yaml
   - a_deploy-acc.yaml
   - a_deploy-prd.yaml
+  - a_observe-applicaton.yaml
