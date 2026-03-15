@@ -4,6 +4,9 @@ metadata:
   name: paas-demo-app
   namespace: example-paas-grafana
 spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
   json: |
     {
       "annotations": {
