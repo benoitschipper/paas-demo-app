@@ -38,25 +38,25 @@ For the demo we pre-build the container image via **GitHub Actions** (see [`.git
 
 ```mermaid
 flowchart TD
-    A([👨‍💻 Code change\npush to GitHub]) --> B[GitHub Actions\nCI/CD workflow]
-    B --> C[(Container Registry\ne.g. ghcr.io)]
+    A([👨‍💻 Code change<br/>push to GitHub]) --> B[GitHub Actions<br/>CI/CD workflow]
+    B --> C[(Container Registry<br/>e.g. ghcr.io)]
     C --> D
 
     subgraph ArgoCD Bootstrap ["ArgoCD Bootstrap (argocd/bootstrap/)"]
-        D[ArgoCD Application\npaas-demo-build\n→ argocd/build/]
-        E[ArgoCD Application\npaas-demo-deploy-dev\n→ argocd/deploy/dev/]
-        F[ArgoCD Application\npaas-demo-deploy-tst\n→ argocd/deploy/tst/]
-        G[ArgoCD Application\npaas-demo-deploy-acc\n→ argocd/deploy/acc/]
-        H[ArgoCD Application\npaas-demo-deploy-prd\n→ argocd/deploy/prd/]
+        D[ArgoCD Application<br/>paas-demo-build<br/>→ argocd/build/]
+        E[ArgoCD Application<br/>paas-demo-deploy-dev<br/>→ argocd/deploy/dev/]
+        F[ArgoCD Application<br/>paas-demo-deploy-tst<br/>→ argocd/deploy/tst/]
+        G[ArgoCD Application<br/>paas-demo-deploy-acc<br/>→ argocd/deploy/acc/]
+        H[ArgoCD Application<br/>paas-demo-deploy-prd<br/>→ argocd/deploy/prd/]
     end
 
-    D -->|Syncs Tekton resources| NS_TEKTON[Namespace\nexample-paas-tekton\nPipeline + RBAC + SA]
-    E -->|Syncs manifests| NS_DEV[Namespace\nexample-paas-dev\nDeployment · Service · Route]
-    F -->|Syncs manifests| NS_TST[Namespace\nexample-paas-tst\nDeployment · Service · Route]
-    G -->|Syncs manifests| NS_ACC[Namespace\nexample-paas-acc\nDeployment · Service · Route]
-    H -->|Syncs manifests| NS_PRD[Namespace\nexample-paas-prd\nDeployment · Service · Route]
+    D -->|Syncs Tekton resources| NS_TEKTON[Namespace<br/>example-paas-tekton<br/>Pipeline + RBAC + SA]
+    E -->|Syncs manifests| NS_DEV[Namespace<br/>example-paas-dev<br/>Deployment · Service · Route]
+    F -->|Syncs manifests| NS_TST[Namespace<br/>example-paas-tst<br/>Deployment · Service · Route]
+    G -->|Syncs manifests| NS_ACC[Namespace<br/>example-paas-acc<br/>Deployment · Service · Route]
+    H -->|Syncs manifests| NS_PRD[Namespace<br/>example-paas-prd<br/>Deployment · Service · Route]
 
-    NS_DEV --> APP([🖥️ Mission Status Dashboard\nGo HTTP Server :8080])
+    NS_DEV --> APP([🖥️ Mission Status Dashboard<br/>Go HTTP Server :8080])
     NS_TST --> APP
     NS_ACC --> APP
     NS_PRD --> APP
