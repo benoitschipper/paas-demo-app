@@ -4,3 +4,6 @@ kind: Kustomization
 resources:
   - a_build-application.yaml
   - a_deploy-dev.yaml
+  - a_deploy-tst.yaml
+  - a_deploy-acc.yaml
+  - a_deploy-prd.yaml
