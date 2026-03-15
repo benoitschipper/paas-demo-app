@@ -9,4 +9,4 @@ metadata:
     app.kubernetes.io/name: paas-demo-app
     app.kubernetes.io/component: frontend
 data:
-  THREAT_LEVEL: "Green" # `GREEN`, `AMBER`, `RED`, `BLACK`
+  THREAT_LEVEL: "GREEN" # `GREEN`, `AMBER`, `RED`, `BLACK`
